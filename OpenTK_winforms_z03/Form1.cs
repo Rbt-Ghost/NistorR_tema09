@@ -619,6 +619,7 @@ namespace OpenTK_winforms_z02
             {
                 DeseneazaCubT_Tex4();
             }
+            DeseneazaSticlaRosie();
 
             if (VBOon == true)
             {
@@ -685,6 +686,49 @@ namespace OpenTK_winforms_z02
                 GL.Vertex3(arrVertex[x, 0], arrVertex[x, 1], arrVertex[x, 2]);
             }
             GL.End();
+        }
+
+        private void DeseneazaSticlaRosie()
+        {
+            // Dezactivăm texturarea pentru a nu se amesteca cu textura cuburilor
+            GL.Disable(EnableCap.Texture2D);
+
+            // 1. ACTIVARE BLENDING
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            // 2. DEFINIRE MATERIALE
+            float[] mat_ambient = { 0.4f, 0.0f, 0.0f, 0.5f };
+            float[] mat_diffuse = { 0.9f, 0.0f, 0.0f, 0.5f };
+            float[] mat_specular = { 1.0f, 1.0f, 1.0f, 1.0f };
+            float mat_shininess = 100.0f;
+
+            GL.Material(MaterialFace.FrontAndBack, MaterialParameter.Ambient, mat_ambient);
+            GL.Material(MaterialFace.FrontAndBack, MaterialParameter.Diffuse, mat_diffuse);
+            GL.Material(MaterialFace.FrontAndBack, MaterialParameter.Specular, mat_specular);
+            GL.Material(MaterialFace.FrontAndBack, MaterialParameter.Shininess, mat_shininess);
+
+            // Culoare de siguranță (dacă lumina e oprită)
+            GL.Color4(0.9f, 0.0f, 0.0f, 0.5f);
+
+            // 3. DESENARE GEOMETRIE
+            GL.Begin(PrimitiveType.Quads);
+
+            GL.Normal3(0.0, 0.0, 1.0);
+
+            // Coordonatele modificate (ridicate cu 30 pe axa Y)
+            // Y-ul de jos devine 0.0f (era -30)
+            // Y-ul de sus devine 60.0f (era 30)
+            GL.Vertex3(-30.0f, 0.0f, 30.0f);
+            GL.Vertex3(30.0f, 0.0f, 30.0f);
+            GL.Vertex3(30.0f, 60.0f, 30.0f);
+            GL.Vertex3(-30.0f, 60.0f, 30.0f);
+
+            GL.End();
+
+            // 4. RESTAURARE STĂRI
+            GL.Disable(EnableCap.Blend);
+            GL.Enable(EnableCap.Texture2D);
         }
 
         // TEXTURARE
