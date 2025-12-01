@@ -536,10 +536,12 @@ namespace OpenTK_winforms_z02
         // RANDARE
         private void GlControl1_Paint(object sender, PaintEventArgs e)
         {
+            // 1. Curățare buffere și setare fundal
             GL.Clear(ClearBufferMask.ColorBufferBit);
             GL.Clear(ClearBufferMask.DepthBufferBit);
             GL.ClearColor(Color.Black);
 
+            // 2. Configurare Cameră (Perspectivă și LookAt)
             Matrix4 perspective = Matrix4.CreatePerspectiveFieldOfView((float)camDepth, 4 / 3, 1, 10000);
             Matrix4 lookat = Matrix4.LookAt(eyePosX, eyePosY, eyePosZ, 0, 0, 0, 0, 1, 0);
             GL.MatrixMode(MatrixMode.Projection);
@@ -548,10 +550,13 @@ namespace OpenTK_winforms_z02
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
             GL.LoadMatrix(ref lookat);
+
+            // Setări Viewport și DepthTest
             GL.Viewport(0, 0, GlControl1.Width, GlControl1.Height);
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
 
+            // 3. Configurare Iluminare
             if (lightON == true)
             {
                 GL.Enable(EnableCap.Lighting);
@@ -575,6 +580,7 @@ namespace OpenTK_winforms_z02
                 GL.Disable(EnableCap.Light0);
             }
 
+            // 4. Transformări Mouse (Rotație scenă)
             if (statusControlMouse2D == true)
             {
                 GL.Rotate(mousePos.X, 0, 1, 0);
@@ -584,16 +590,18 @@ namespace OpenTK_winforms_z02
                 GL.Rotate(mousePos.X, 0, 1, 1);
             }
 
-            // Texturare
+            // 5. Texturare (Activare globală pentru scenă)
             GL.Enable(EnableCap.Texture2D);
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
             LoadTextures();
 
+            // 6. Desenare Axe de coordonate
             if (statusControlAxe == true)
             {
                 DeseneazaAxe();
             }
 
+            // 7. Desenare Cuburi (Logică originală)
             if (statusCube.ToUpper().Equals("QUADS"))
             {
                 DeseneazaCubQ();
@@ -619,18 +627,40 @@ namespace OpenTK_winforms_z02
             {
                 DeseneazaCubT_Tex4();
             }
+
+            // 8. Desenare Piramidă Texturată (NOU)
+            // Folosim Push/Pop Matrix pentru a nu afecta poziția celorlalte obiecte
+            GL.PushMatrix();
+            GL.Translate(50.0f, 20.0f, 0.0f); // Mutăm piramida la dreapta și sus
+            DeseneazaPiramidaTexturata();
+            GL.PopMatrix();
+
+            // 9. Desenare Sticlă Roșie (NOU)
+            // Această metodă conține intern GL.Disable(Texture2D) pentru a nu fi afectată de texturi
+            // și este desenată spre final pentru a gestiona corect transparența peste fundal
             DeseneazaSticlaRosie();
 
+            // 10. Desenare VBO (dacă este activat)
             if (VBOon == true)
             {
                 GL.EnableClientState(ArrayCap.VertexArray);
                 GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 2);
                 GL.BindBuffer(BufferTarget.ArrayBuffer, VBOobject);
-                GL.TexCoord2(0.5f, 0.5f);
+
+                // Dacă VBO-ul nu are coordonate textură, e bine să dezactivăm texturarea aici sau să setăm una albă
+                // Pentru simplitate, păstrăm setările curente, dar forțăm culoarea roșie
                 GL.Color3(Color.Red);
+
+                // Notă: TexCoord2 trebuie apelat per vertex în VBO arrays sau folosind ClientState pentru texturi
+                // Aici este o setare statică
+                GL.TexCoord2(0.5f, 0.5f);
+
                 GL.DrawArrays(PrimitiveType.Quads, 0, nVert);
+
+                GL.DisableClientState(ArrayCap.VertexArray);
             }
 
+            // 11. Finalizare (Swap Buffers)
             GlControl1.SwapBuffers();
         }
 
@@ -729,6 +759,65 @@ namespace OpenTK_winforms_z02
             // 4. RESTAURARE STĂRI
             GL.Disable(EnableCap.Blend);
             GL.Enable(EnableCap.Texture2D);
+        }
+
+        private void DeseneazaPiramidaTexturata()
+        {
+            // Ne asigurăm că texturarea este activată
+            GL.Enable(EnableCap.Texture2D);
+
+            // Alegem textura (0 = cărămizi, 1 = OpenGL logo, 2 = Mix)
+            GL.BindTexture(TextureTarget.Texture2D, textures[2]);
+
+            // Setăm culoarea pe alb pentru a nu altera culorile texturii originale
+            GL.Color3(Color.White);
+
+            // Dimensiunea piramidei
+            float size = 25.0f;
+            float height = 40.0f;
+
+            // Începem desenarea fețelor laterale (TRIUNGHIURI - suprafețe non-rectangulare)
+            GL.Begin(PrimitiveType.Triangles);
+
+            // --- Fața din Față ---
+            GL.Normal3(0.0f, 0.5f, 1.0f); // Normala aproximativă pentru lumini
+                                          // Coordonata textură (stânga-jos) -> Vertex stânga-jos
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(-size, -size, size);
+            // Coordonata textură (dreapta-jos) -> Vertex dreapta-jos
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(size, -size, size);
+            // Coordonata textură (centru-sus) -> Vârful piramidei
+            GL.TexCoord2(0.5f, 1.0f); GL.Vertex3(0.0f, height, 0.0f);
+
+            // --- Fața din Dreapta ---
+            GL.Normal3(1.0f, 0.5f, 0.0f);
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(size, -size, size);
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(size, -size, -size);
+            GL.TexCoord2(0.5f, 1.0f); GL.Vertex3(0.0f, height, 0.0f);
+
+            // --- Fața din Spate ---
+            GL.Normal3(0.0f, 0.5f, -1.0f);
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(size, -size, -size);
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(-size, -size, -size);
+            GL.TexCoord2(0.5f, 1.0f); GL.Vertex3(0.0f, height, 0.0f);
+
+            // --- Fața din Stânga ---
+            GL.Normal3(-1.0f, 0.5f, 0.0f);
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(-size, -size, -size);
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(-size, -size, size);
+            GL.TexCoord2(0.5f, 1.0f); GL.Vertex3(0.0f, height, 0.0f);
+
+            GL.End();
+
+            // Desenăm baza (PATRULATER - suprafață rectangulară)
+            GL.Begin(PrimitiveType.Quads);
+            GL.Normal3(0.0f, -1.0f, 0.0f); // Normala în jos
+
+            // Mapăm textura complet pe bază
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(-size, -size, -size);
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(size, -size, -size);
+            GL.TexCoord2(1.0f, 1.0f); GL.Vertex3(size, -size, size);
+            GL.TexCoord2(0.0f, 1.0f); GL.Vertex3(-size, -size, size);
+            GL.End();
         }
 
         // TEXTURARE
