@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace OpenTK_winforms_z02 {
+namespace OpenTK_winforms_z03 {
     static class Program {
         /// <summary>
         /// The main entry point for the application.

@@ -7,7 +7,7 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using OpenTK_winforms_z03;
 
-namespace OpenTK_winforms_z02
+namespace OpenTK_winforms_z03
 {
     public partial class Form1 : Form
     {
